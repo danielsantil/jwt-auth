@@ -26,11 +26,11 @@ namespace TestAuth.Controllers
         {
             if (!_loginData.IsLoginValid(model)) return Unauthorized();
 
-            var claims = new List<Claim> {
+            var customClains = new List<Claim> {
                 new Claim(JwtRegisteredClaimNames.Email, model.Email)
             };
 
-            return Ok(_authService.GetToken(claims));
+            return Ok(_authService.GetToken(customClains));
         }
     }
 }

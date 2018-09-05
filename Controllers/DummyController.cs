@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace TestAuth.Controllers
@@ -5,9 +6,15 @@ namespace TestAuth.Controllers
     [Route("[controller]/[action]")]
     public class DummyController : Controller
     {
-        public IActionResult Message()
+        [Authorize]
+        public IActionResult Secure()
         {
-            return Ok("Dummy response");
+            return Ok("JWT works!");
+        }
+
+        public IActionResult Unsecure()
+        {
+            return Ok("Unsecure gateway");
         }
     }
 }

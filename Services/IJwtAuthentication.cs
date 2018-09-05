@@ -5,7 +5,6 @@ namespace TestAuth.Services
 {
     public interface IJwtAuthentication
     {
-        string GetToken(List<Claim> claims);
-        string GetRefreshToken();
+        string GetToken(List<Claim> customClaims);
     }
 }

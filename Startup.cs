@@ -11,6 +11,7 @@ using TestAuth.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using TestAuth.Services.Data;
+using TestAuth.ExtensionMethods;
 
 namespace TestAuth
 {
@@ -28,6 +29,7 @@ namespace TestAuth
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.ConfigureAuthentication(_configuration);
             services.AddScoped<IJwtAuthentication, JwtAuthentication>();
             services.AddScoped<ILoginData, SqlLoginData>();
             services.AddDbContext<LoginDbContext>(options => options.UseSqlServer(_configuration.GetConnectionString("TestAuth")));
@@ -41,6 +43,7 @@ namespace TestAuth
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseAuthentication();
             app.UseMvc();
         }
     }

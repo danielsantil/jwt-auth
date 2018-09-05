@@ -17,25 +17,20 @@ namespace TestAuth.Services
             _conf = configuration;
         }
 
-        public string GetToken(List<Claim> claims)
+        public string GetToken(List<Claim> customClaims)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_conf["JWT:SecretKey"]));
             JwtSecurityToken token = new JwtSecurityToken(
                 issuer: _conf["JWT:Issuer"],
                 audience: _conf["JWT:Issuer"],
-                claims: claims,
+                claims: customClaims,
                 notBefore: DateTime.Now,
-                expires: DateTime.Now.AddSeconds(30),
+                expires: DateTime.Now.AddSeconds(_conf.GetValue<double>("JWT:ExpireSeconds")),
                 signingCredentials: new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256)
             );
 
             string jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
             return jwtToken;
-        }
-
-        public string GetRefreshToken()
-        {
-            throw new System.NotImplementedException();
         }
     }
 }
