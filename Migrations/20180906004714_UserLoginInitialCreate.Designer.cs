@@ -9,8 +9,8 @@ using TestAuth.Data;
 namespace TestAuth.Migrations
 {
     [DbContext(typeof(LoginDbContext))]
-    [Migration("20180905043331_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20180906004714_UserLoginInitialCreate")]
+    partial class UserLoginInitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -20,21 +20,23 @@ namespace TestAuth.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("TestAuth.Entities.LoginModel", b =>
+            modelBuilder.Entity("TestAuth.Entities.UserLogin", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("Email")
-                        .IsRequired();
+                        .IsRequired()
+                        .HasMaxLength(100);
 
                     b.Property<string>("Password")
-                        .IsRequired();
+                        .IsRequired()
+                        .HasMaxLength(100);
 
                     b.HasKey("Id");
 
-                    b.ToTable("Login");
+                    b.ToTable("UserLogin");
                 });
 #pragma warning restore 612, 618
         }

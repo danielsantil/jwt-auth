@@ -28,6 +28,8 @@ namespace TestAuth
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            // services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddHttpContextAccessor();
             services.AddMvc();
             services.ConfigureAuthentication(_configuration);
             services.AddScoped<IJwtAuthentication, JwtAuthentication>();

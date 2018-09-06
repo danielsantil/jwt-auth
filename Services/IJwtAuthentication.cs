@@ -6,5 +6,7 @@ namespace TestAuth.Services
     public interface IJwtAuthentication
     {
         string GetToken(List<Claim> customClaims);
+        string GetRefreshToken();
+        ClaimsPrincipal GetPrincipalsFromExpired(string token);
     }
 }

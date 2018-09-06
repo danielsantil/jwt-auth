@@ -7,6 +7,7 @@ namespace TestAuth.Data
     {
         public LoginDbContext(DbContextOptions options) : base(options) { }
 
-        public DbSet<LoginModel> Login { get; set; }
+        public DbSet<UserLogin> UserLogin { get; set; }
+        public DbSet<TokenLogin> TokenLogin { get; set; }
     }
 }
