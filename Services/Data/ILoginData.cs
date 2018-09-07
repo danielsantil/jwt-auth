@@ -6,8 +6,10 @@ namespace TestAuth.Services.Data
     {
         bool IsLoginValid(UserLogin model);
         void SaveRefreshToken(TokenLogin model);
-        bool IsRefreshTokenValid(int userId, string refreshToken, out TokenLogin tokenEntity);
+        TokenLogin GetRefreshTokenEntity(int userId, string refreshToken);
         void DeleteRefreshToken(TokenLogin model);
         int GetUserId(string email);
+        int DeleteDistinctRefreshTokens(int userId, string currentRefreshToken);
+        int CountRefreshTokens(int userId);
     }
 }

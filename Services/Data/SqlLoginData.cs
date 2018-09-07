@@ -1,6 +1,7 @@
 using TestAuth.Data;
 using TestAuth.Entities;
 using System.Linq;
+using System;
 
 namespace TestAuth.Services.Data
 {
@@ -31,7 +32,7 @@ namespace TestAuth.Services.Data
             _context.SaveChanges();
         }
 
-        public bool IsRefreshTokenValid(int userId, string refreshToken, out TokenLogin tokenEntity)
+        public TokenLogin GetRefreshTokenEntity(int userId, string refreshToken)
         {
             var query = from token in _context.TokenLogin
                         join user in _context.UserLogin
@@ -39,9 +40,8 @@ namespace TestAuth.Services.Data
                         where user.Id == userId
                         && token.RefreshToken == refreshToken
                         select new { value = token };
-            tokenEntity = query.SingleOrDefault()?.value;
-            int count = query.Count();
-            return count == 1;
+
+            return query.SingleOrDefault()?.value;
         }
 
         public void DeleteRefreshToken(TokenLogin model)
@@ -53,6 +53,18 @@ namespace TestAuth.Services.Data
         public int GetUserId(string email)
         {
             return _context.UserLogin.SingleOrDefault(e => e.Email == email).Id;
+        }
+
+        public int DeleteDistinctRefreshTokens(int userId, string currentRefreshToken)
+        {
+            _context.TokenLogin.RemoveRange(_context.TokenLogin
+                .Where(t => t.UserId == userId && t.RefreshToken != currentRefreshToken));
+            return _context.SaveChanges();
+        }
+
+        public int CountRefreshTokens(int userId)
+        {
+            return _context.TokenLogin.Count(t => t.UserId == userId);
         }
     }
 }
