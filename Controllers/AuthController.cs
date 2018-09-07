@@ -1,16 +1,11 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
-using TestAuth.Services;
-using System.IdentityModel.Tokens.Jwt;
-using TestAuth.Entities;
-using System.Collections.Generic;
-using System.Web.Http;
-using TestAuth.Services.Data;
-using System.Linq;
-using System;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Linq;
+using TestAuth.Entities;
+using TestAuth.Services;
+using TestAuth.Services.Data;
 
 namespace TestAuth.Controllers
 {
@@ -33,7 +28,7 @@ namespace TestAuth.Controllers
         }
 
         [HttpPost]
-        public IActionResult Token(UserLogin model)
+        public IActionResult Login(UserLogin model)
         {
             if (!_loginData.IsLoginValid(model)) return Unauthorized();
 
@@ -46,10 +41,18 @@ namespace TestAuth.Controllers
             var result = new
             {
                 accessToken = token,
-                refreshToken = refreshToken,
+                refreshToken,
                 refreshTokensCount = refreshCount
             };
             return Ok(result);
+        }
+
+        [HttpPost]
+        public IActionResult Register(UserLogin model)
+        {
+            if (!ModelState.IsValid) return BadRequest();
+
+            return Ok(_loginData.RegisterUser(model));
         }
 
         [HttpPost]

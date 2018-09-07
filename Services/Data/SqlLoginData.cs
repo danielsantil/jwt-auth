@@ -1,7 +1,8 @@
+using System;
+using System.Linq;
+using System.Security.Cryptography;
 using TestAuth.Data;
 using TestAuth.Entities;
-using System.Linq;
-using System;
 
 namespace TestAuth.Services.Data
 {
@@ -65,6 +66,52 @@ namespace TestAuth.Services.Data
         public int CountRefreshTokens(int userId)
         {
             return _context.TokenLogin.Count(t => t.UserId == userId);
+        }
+
+        public object RegisterUser(UserLogin creds)
+        {
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                byte[] salt = new byte[16];
+                rng.GetBytes(salt);
+            }
+
+
+            return true;
+        }
+
+        private string GeneratePassword(string plainText)
+        {
+            int SALT_SIZE = 64;
+            int HASH_SIZE = 32;
+            int HASH_ITERATIONS = 10000;
+
+            byte[] salt = GenerateSalt(SALT_SIZE);
+            byte[] hash = GenerateHash(plainText, salt, HASH_ITERATIONS, HASH_SIZE);
+            byte[] appendedHash = new byte[HASH_SIZE + SALT_SIZE];
+            Array.Copy(salt, 0, appendedHash, 0, SALT_SIZE);
+            Array.Copy(hash, 0, appendedHash, SALT_SIZE, HASH_SIZE);
+
+            return Convert.ToBase64String(appendedHash);
+        }
+
+        private byte[] GenerateSalt(int saltSize)
+        {
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                byte[] salt = new byte[saltSize];
+                rng.GetBytes(salt);
+                return salt;
+            }
+        }
+
+        private byte[] GenerateHash(string plainText, byte[] salt, int iterations, int hashSize)
+        {
+            using (var hashFunction = new Rfc2898DeriveBytes(plainText, salt, iterations))
+            {
+                byte[] hash = hashFunction.GetBytes(hashSize);
+                return hash;
+            }
         }
     }
 }
