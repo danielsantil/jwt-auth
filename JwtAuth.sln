@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2016
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestAuth", "TestAuth.csproj", "{239BFBDE-CB30-4CF2-8E1C-0318C3370703}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JwtAuth", "JwtAuth.csproj", "{239BFBDE-CB30-4CF2-8E1C-0318C3370703}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

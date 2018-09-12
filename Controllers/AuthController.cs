@@ -1,147 +1,152 @@
+using AutoMapper;
+using JwtAuth.Entities.Data;
+using JwtAuth.Entities.ViewModels;
+using JwtAuth.Services;
+using JwtAuth.Services.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Linq;
-using TestAuth.Entities;
-using TestAuth.Services;
-using TestAuth.Services.Data;
 
-namespace TestAuth.Controllers
+namespace JwtAuth.Controllers
 {
     [Route("[controller]/[action]")]
     public class AuthController : Controller
     {
         private const string InvalidRefreshToken = "Invalid refresh token";
         private const string RefreshTokenExpired = "Refresh token not longer valid.";
-        private IHttpContextAccessor _http;
-        private IConfiguration _configuration;
-        private IJwtAuthentication _authService;
-        private ILoginData _loginData;
+        private readonly IHttpContextAccessor _http;
+        private readonly IConfiguration _configuration;
+        private readonly IJwtAuthentication _authService;
+        private readonly ILoginData _loginData;
+        private readonly IMapper _mapper;
 
-        public AuthController(IHttpContextAccessor httpContext, IConfiguration configuration, IJwtAuthentication authService, ILoginData loginData)
+        public AuthController(IHttpContextAccessor httpContext, IConfiguration configuration, IJwtAuthentication authService, ILoginData loginData, IMapper mapper)
         {
             _http = httpContext;
             _configuration = configuration;
             _authService = authService;
             _loginData = loginData;
+            _mapper = mapper;
         }
 
         [HttpPost]
-        public IActionResult Login(UserLogin model)
+        public IActionResult Register(UserLoginViewModel model)
         {
-            if (!_loginData.IsLoginValid(model)) return Unauthorized();
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            string token = _authService.GetToken(model.GetClaims());
-            string refreshToken = _authService.GetRefreshToken();
-            TokenLogin tokenModel = BuildTokenEntity(model.Id, refreshToken);
-            _loginData.SaveRefreshToken(tokenModel);
-            int refreshCount = _loginData.CountRefreshTokens(model.Id);
+            UserLogin dbModel = _mapper.Map<UserLogin>(model);
 
-            var result = new
-            {
-                accessToken = token,
-                refreshToken,
-                refreshTokensCount = refreshCount
-            };
-            return Ok(result);
+            return Ok(dbModel);
+            //return Ok(_loginData.RegisterUser(model));
         }
 
-        [HttpPost]
-        public IActionResult Register(UserLogin model)
-        {
-            if (!ModelState.IsValid) return BadRequest();
+        //[HttpPost]
+        //public IActionResult Login(UserLoginViewModel model)
+        //{
+        //    if (!_loginData.IsLoginValid(model)) return Unauthorized();
 
-            return Ok(_loginData.RegisterUser(model));
-        }
+        //    string token = _authService.GetToken(model.GetClaims());
+        //    string refreshToken = _authService.GetRefreshToken();
+        //    TokenLogin tokenModel = BuildTokenEntity(model.Id, refreshToken);
+        //    _loginData.SaveRefreshToken(tokenModel);
+        //    int refreshCount = _loginData.CountRefreshTokens(model.Id);
 
-        [HttpPost]
-        public IActionResult RefreshToken(string token, string refreshToken)
-        {
-            try
-            {
-                if (token == null) return BadRequest();
+        //    var result = new
+        //    {
+        //        accessToken = token,
+        //        refreshToken,
+        //        refreshTokensCount = refreshCount
+        //    };
+        //    return Ok(result);
+        //}
 
-                UserLogin user = this.GetUserFromToken(token);
-                TokenLogin oldTokenEntity = ValidateRefreshToken(user.Id, refreshToken);
+        //[HttpPost]
+        //public IActionResult RefreshToken(string token, string refreshToken)
+        //{
+        //    try
+        //    {
+        //        if (token == null) return BadRequest();
 
-                string newAccessToken = _authService.GetToken(user.GetClaims());
-                string newRefreshToken = _authService.GetRefreshToken();
+        //        UserLoginViewModel user = GetUserFromToken(token);
+        //        TokenLogin oldTokenEntity = ValidateRefreshToken(user.Id, refreshToken);
 
-                _loginData.DeleteRefreshToken(oldTokenEntity);
-                TokenLogin newTokenEntity = BuildTokenEntity(user.Id, newRefreshToken);
-                _loginData.SaveRefreshToken(newTokenEntity);
+        //        string newAccessToken = _authService.GetToken(user.GetClaims());
+        //        string newRefreshToken = _authService.GetRefreshToken();
 
-                var result = new
-                {
-                    accessToken = newAccessToken,
-                    refreshToken = newRefreshToken
-                };
-                return Ok(result);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
+        //        _loginData.DeleteRefreshToken(oldTokenEntity);
+        //        TokenLogin newTokenEntity = BuildTokenEntity(user.Id, newRefreshToken);
+        //        _loginData.SaveRefreshToken(newTokenEntity);
 
-        public IActionResult InvalidateOthers(string token, string refreshToken)
-        {
-            try
-            {
-                if (token == null) return BadRequest();
+        //        var result = new
+        //        {
+        //            accessToken = newAccessToken,
+        //            refreshToken = newRefreshToken
+        //        };
+        //        return Ok(result);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return BadRequest(e.Message);
+        //    }
+        //}
 
-                UserLogin user = this.GetUserFromToken(token);
-                ValidateRefreshToken(user.Id, refreshToken);
-                int count = _loginData.DeleteDistinctRefreshTokens(user.Id, refreshToken);
+        //public IActionResult InvalidateOthers(string token, string refreshToken)
+        //{
+        //    try
+        //    {
+        //        if (token == null) return BadRequest();
 
-                var result = new
-                {
-                    tokensInvalidated = count
-                };
-                return Ok(result);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
+        //        UserLoginViewModel user = this.GetUserFromToken(token);
+        //        ValidateRefreshToken(user.Id, refreshToken);
+        //        int count = _loginData.DeleteDistinctRefreshTokens(user.Id, refreshToken);
 
-        private TokenLogin BuildTokenEntity(int userId, string refreshToken)
-        {
-            TokenLogin newTokenEntity = new TokenLogin
-            {
-                UserId = userId,
-                RefreshToken = refreshToken,
-                GeneratedOn = DateTime.Now,
-                Expiration = DateTime.Now.AddSeconds(_configuration.GetValue<double>("JWT:RefreshExpireSeconds")),
-                Origin = _http.HttpContext.Connection.RemoteIpAddress?.MapToIPv4()?.ToString()
-            };
+        //        var result = new
+        //        {
+        //            tokensInvalidated = count
+        //        };
+        //        return Ok(result);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return BadRequest(e.Message);
+        //    }
+        //}
 
-            return newTokenEntity;
-        }
+        //private TokenLogin BuildTokenEntity(int userId, string refreshToken)
+        //{
+        //    TokenLogin newTokenEntity = new TokenLogin
+        //    {
+        //        UserId = userId,
+        //        RefreshToken = refreshToken,
+        //        GeneratedOn = DateTime.Now,
+        //        Expiration = DateTime.Now.AddSeconds(_configuration.GetValue<double>("JWT:RefreshExpireSeconds")),
+        //        Origin = _http.HttpContext.Connection.RemoteIpAddress?.MapToIPv4()?.ToString()
+        //    };
 
-        private UserLogin GetUserFromToken(string token)
-        {
-            var principal = _authService.GetPrincipalsFromExpired(token);
-            string email = principal.Identities.FirstOrDefault().Claims.FirstOrDefault().Value;
-            int userId = _loginData.GetUserId(email);
+        //    return newTokenEntity;
+        //}
 
-            return new UserLogin
-            {
-                Id = userId,
-                Email = email
-            };
-        }
+        //private UserLoginViewModel GetUserFromToken(string token)
+        //{
+        //    var principal = _authService.GetPrincipalsFromExpired(token);
+        //    string email = principal.Identities.FirstOrDefault().Claims.FirstOrDefault().Value;
+        //    int userId = _loginData.GetUserId(email);
 
-        private TokenLogin ValidateRefreshToken(int userId, string refreshToken)
-        {
-            TokenLogin oldTokenEntity = _loginData.GetRefreshTokenEntity(userId, refreshToken);
-            if (oldTokenEntity == null || DateTime.Now.CompareTo(oldTokenEntity.Expiration) >= 0)
-            {
-                throw new Exception(RefreshTokenExpired);
-            }
-            return oldTokenEntity;
-        }
+        //    return new UserLoginViewModel
+        //    {
+        //        Id = userId,
+        //        Email = email
+        //    };
+        //}
+
+        //private TokenLogin ValidateRefreshToken(int userId, string refreshToken)
+        //{
+        //    TokenLogin oldTokenEntity = _loginData.GetRefreshTokenEntity(userId, refreshToken);
+        //    if (oldTokenEntity == null || DateTime.Now.CompareTo(oldTokenEntity.Expiration) >= 0)
+        //    {
+        //        throw new Exception(RefreshTokenExpired);
+        //    }
+        //    return oldTokenEntity;
+        //}
     }
 }

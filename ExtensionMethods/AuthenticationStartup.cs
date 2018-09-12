@@ -6,7 +6,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TestAuth.ExtensionMethods
+namespace JwtAuth.ExtensionMethods
 {
     public static class AuthenticationStartup
     {

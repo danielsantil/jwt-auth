@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace TestAuth.Entities
+namespace JwtAuth.Entities.Data
 {
     public class TokenLogin
     {

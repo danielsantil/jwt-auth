@@ -1,30 +1,31 @@
-using System;
+using JwtAuth.DataContext;
+using JwtAuth.Entities.ViewModels;
+using JwtAuth.Entities.Data;
 using System.Linq;
 using System.Security.Cryptography;
-using TestAuth.Data;
-using TestAuth.Entities;
 
-namespace TestAuth.Services.Data
+namespace JwtAuth.Services.Data
 {
     public class SqlLoginData : ILoginData
     {
-        private LoginDbContext _context;
+        private JwtAuthDbContext _context;
 
-        public SqlLoginData(LoginDbContext context)
+        public SqlLoginData(JwtAuthDbContext context)
         {
             _context = context;
         }
-        public bool IsLoginValid(UserLogin model)
+        public bool IsLoginValid(UserLoginViewModel model)
         {
-            var logged = _context.UserLogin.FirstOrDefault(e =>
-            e.Email == model.Email && e.Password == model.Password);
-            if (logged != null)
-            {
-                model.Id = logged.Id;
-                return true;
-            }
+            //var logged = _context.UserLogin.FirstOrDefault(e =>
+            //e.Email == model.Email && e.Password == model.Password);
+            //if (logged != null)
+            //{
+            //    model.Id = logged.Id;
+            //    return true;
+            //}
 
-            return false;
+            //return false;
+            return true;
         }
 
         public void SaveRefreshToken(TokenLogin model)
@@ -68,7 +69,7 @@ namespace TestAuth.Services.Data
             return _context.TokenLogin.Count(t => t.UserId == userId);
         }
 
-        public object RegisterUser(UserLogin creds)
+        public object RegisterUser(UserLoginViewModel creds)
         {
             using (var rng = new RNGCryptoServiceProvider())
             {
@@ -80,36 +81,23 @@ namespace TestAuth.Services.Data
             return true;
         }
 
-        private string GeneratePassword(string plainText)
+        private byte[] GeneratePassword(string plainText, out byte[] salt)
         {
             int SALT_SIZE = 64;
             int HASH_SIZE = 32;
             int HASH_ITERATIONS = 10000;
 
-            byte[] salt = GenerateSalt(SALT_SIZE);
-            byte[] hash = GenerateHash(plainText, salt, HASH_ITERATIONS, HASH_SIZE);
-            byte[] appendedHash = new byte[HASH_SIZE + SALT_SIZE];
-            Array.Copy(salt, 0, appendedHash, 0, SALT_SIZE);
-            Array.Copy(hash, 0, appendedHash, SALT_SIZE, HASH_SIZE);
-
-            return Convert.ToBase64String(appendedHash);
-        }
-
-        private byte[] GenerateSalt(int saltSize)
-        {
-            using (var rng = new RNGCryptoServiceProvider())
+            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
+            using (Rfc2898DeriveBytes hashFunction = new Rfc2898DeriveBytes(plainText, SALT_SIZE))
             {
-                byte[] salt = new byte[saltSize];
+                // Generate salt
+                salt = new byte[SALT_SIZE];
                 rng.GetBytes(salt);
-                return salt;
-            }
-        }
 
-        private byte[] GenerateHash(string plainText, byte[] salt, int iterations, int hashSize)
-        {
-            using (var hashFunction = new Rfc2898DeriveBytes(plainText, salt, iterations))
-            {
-                byte[] hash = hashFunction.GetBytes(hashSize);
+                // Generate hash
+                hashFunction.Salt = salt;
+                hashFunction.IterationCount = HASH_ITERATIONS;
+                byte[] hash = hashFunction.GetBytes(HASH_SIZE);
                 return hash;
             }
         }

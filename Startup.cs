@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using TestAuth.Data;
-using TestAuth.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using TestAuth.Services.Data;
-using TestAuth.ExtensionMethods;
+using Microsoft.Extensions.DependencyInjection;
+using JwtAuth.DataContext;
+using JwtAuth.ExtensionMethods;
+using JwtAuth.Services;
+using JwtAuth.Services.Data;
+using AutoMapper;
 
-namespace TestAuth
+namespace JwtAuth
 {
     public class Startup
     {
@@ -31,10 +27,11 @@ namespace TestAuth
             // services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddHttpContextAccessor();
             services.AddMvc();
+            services.AddAutoMapper();
             services.ConfigureAuthentication(_configuration);
             services.AddScoped<IJwtAuthentication, JwtAuthentication>();
             services.AddScoped<ILoginData, SqlLoginData>();
-            services.AddDbContext<LoginDbContext>(options => options.UseSqlServer(_configuration.GetConnectionString("TestAuth")));
+            services.AddDbContext<JwtAuthDbContext>(options => options.UseSqlServer(_configuration.GetConnectionString("JwtAuth")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

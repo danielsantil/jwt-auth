@@ -1,11 +1,12 @@
-using TestAuth.Entities;
+using JwtAuth.Entities.ViewModels;
+using JwtAuth.Entities.Data;
 
-namespace TestAuth.Services.Data
+namespace JwtAuth.Services.Data
 {
     public interface ILoginData
     {
-        bool IsLoginValid(UserLogin model);
-        object RegisterUser(UserLogin credentials);
+        bool IsLoginValid(UserLoginViewModel model);
+        object RegisterUser(UserLoginViewModel credentials);
         void SaveRefreshToken(TokenLogin model);
         TokenLogin GetRefreshTokenEntity(int userId, string refreshToken);
         void DeleteRefreshToken(TokenLogin model);

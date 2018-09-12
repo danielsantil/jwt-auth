@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Security.Claims;
 
-namespace TestAuth.Services
+namespace JwtAuth.Services
 {
     public interface IJwtAuthentication
     {

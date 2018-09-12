@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace TestAuth.Migrations
+namespace JwtAuth.Migrations
 {
     public partial class TokenLoginInitialCreate : Migration
     {

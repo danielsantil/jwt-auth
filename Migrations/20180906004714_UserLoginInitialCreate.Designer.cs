@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using TestAuth.Data;
+using JwtAuth.DataContext;
 
-namespace TestAuth.Migrations
+namespace JwtAuth.Migrations
 {
-    [DbContext(typeof(LoginDbContext))]
+    [DbContext(typeof(JwtAuthDbContext))]
     [Migration("20180906004714_UserLoginInitialCreate")]
     partial class UserLoginInitialCreate
     {
