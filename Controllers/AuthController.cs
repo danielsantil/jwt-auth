@@ -1,64 +1,35 @@
-using AutoMapper;
-using JwtAuth.Entities.Data;
-using JwtAuth.Entities.ViewModels;
 using JwtAuth.Services;
-using JwtAuth.Services.Data;
-using Microsoft.AspNetCore.Http;
+using JwtAuthModels.ViewModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace JwtAuth.Controllers
 {
-    [Route("[controller]/[action]")]
     public class AuthController : Controller
     {
         private const string InvalidRefreshToken = "Invalid refresh token";
         private const string RefreshTokenExpired = "Refresh token not longer valid.";
-        private readonly IHttpContextAccessor _http;
-        private readonly IConfiguration _configuration;
-        private readonly IJwtAuthentication _authService;
-        private readonly ILoginData _loginData;
-        private readonly IMapper _mapper;
+        private readonly IUserAuthentication _userService;
 
-        public AuthController(IHttpContextAccessor httpContext, IConfiguration configuration, IJwtAuthentication authService, ILoginData loginData, IMapper mapper)
+        public AuthController(IUserAuthentication userService)
         {
-            _http = httpContext;
-            _configuration = configuration;
-            _authService = authService;
-            _loginData = loginData;
-            _mapper = mapper;
+            _userService = userService;
         }
 
         [HttpPost]
-        public IActionResult Register(UserLoginViewModel model)
+        public IActionResult Register(UserViewModel model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            UserLogin dbModel = _mapper.Map<UserLogin>(model);
-
-            return Ok(dbModel);
-            //return Ok(_loginData.RegisterUser(model));
+            return Ok(_userService.Register(model));
         }
 
-        //[HttpPost]
-        //public IActionResult Login(UserLoginViewModel model)
-        //{
-        //    if (!_loginData.IsLoginValid(model)) return Unauthorized();
+        [HttpPost]
+        public IActionResult Login(UserViewModel model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        //    string token = _authService.GetToken(model.GetClaims());
-        //    string refreshToken = _authService.GetRefreshToken();
-        //    TokenLogin tokenModel = BuildTokenEntity(model.Id, refreshToken);
-        //    _loginData.SaveRefreshToken(tokenModel);
-        //    int refreshCount = _loginData.CountRefreshTokens(model.Id);
-
-        //    var result = new
-        //    {
-        //        accessToken = token,
-        //        refreshToken,
-        //        refreshTokensCount = refreshCount
-        //    };
-        //    return Ok(result);
-        //}
+            return Ok(_userService.Authenticate(model));
+        }
 
         //[HttpPost]
         //public IActionResult RefreshToken(string token, string refreshToken)
@@ -110,20 +81,6 @@ namespace JwtAuth.Controllers
         //    {
         //        return BadRequest(e.Message);
         //    }
-        //}
-
-        //private TokenLogin BuildTokenEntity(int userId, string refreshToken)
-        //{
-        //    TokenLogin newTokenEntity = new TokenLogin
-        //    {
-        //        UserId = userId,
-        //        RefreshToken = refreshToken,
-        //        GeneratedOn = DateTime.Now,
-        //        Expiration = DateTime.Now.AddSeconds(_configuration.GetValue<double>("JWT:RefreshExpireSeconds")),
-        //        Origin = _http.HttpContext.Connection.RemoteIpAddress?.MapToIPv4()?.ToString()
-        //    };
-
-        //    return newTokenEntity;
         //}
 
         //private UserLoginViewModel GetUserFromToken(string token)

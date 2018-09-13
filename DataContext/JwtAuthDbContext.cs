@@ -1,5 +1,5 @@
+using JwtAuthModels.Data;
 using Microsoft.EntityFrameworkCore;
-using JwtAuth.Entities.Data;
 
 namespace JwtAuth.DataContext
 {
@@ -7,7 +7,7 @@ namespace JwtAuth.DataContext
     {
         public JwtAuthDbContext(DbContextOptions options) : base(options) { }
 
-        public DbSet<UserLogin> UserLogin { get; set; }
-        public DbSet<TokenLogin> TokenLogin { get; set; }
+        public DbSet<User> User { get; set; }
+        public DbSet<Token> Token { get; set; }
     }
 }

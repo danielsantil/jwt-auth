@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using JwtAuth.Entities.Data;
-using JwtAuth.Entities.ViewModels;
+using JwtAuthModels.Data;
+using JwtAuthModels.ViewModels;
 
 namespace JwtAuth
 {
@@ -8,7 +8,7 @@ namespace JwtAuth
     {
         public MapperProfile()
         {
-            CreateMap<UserLoginViewModel, UserLogin>().ReverseMap();
+            CreateMap<UserViewModel, User>().ReverseMap();
         }
     }
 }
