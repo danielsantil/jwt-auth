@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JwtAuthModels\JwtAuthModels.csproj" />
+    <ProjectReference Include="..\jwt-auth-models\JwtAuthModels.csproj" />
   </ItemGroup>
 
 </Project>
