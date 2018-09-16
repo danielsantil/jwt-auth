@@ -2,7 +2,7 @@
 using JwtAuthModels.Data;
 using JwtAuthModels.ViewModels;
 
-namespace JwtAuth
+namespace JwtAuth.Services
 {
     public class MapperProfile : Profile
     {

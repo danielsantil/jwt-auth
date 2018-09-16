@@ -1,11 +1,11 @@
-﻿using JwtAuth.DataContext;
-using JwtAuthModels.Data;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using JwtAuth.DataContext;
+using JwtAuthModels.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace JwtAuth.Repository
 {
@@ -23,6 +23,12 @@ namespace JwtAuth.Repository
             T entity = await _context.Set<T>().FirstOrDefaultAsync(expression);
             Detach(entity);
             return entity;
+        }
+
+        public virtual async Task<int> Count(Expression<Func<T, bool>> expression)
+        {
+            int count = await _context.Set<T>().CountAsync(expression);
+            return count;
         }
 
         public virtual async Task<IEnumerable<T>> GetAll()
@@ -63,9 +69,16 @@ namespace JwtAuth.Repository
             await _context.SaveChangesAsync();
         }
 
-        public void Detach(T entity)
+        public virtual void Detach(T entity)
         {
             _context.Entry(entity).State = EntityState.Detached;
+        }
+
+        public async Task Delete(Expression<Func<T, bool>> expression)
+        {
+            IEnumerable<T> list = await GetAll(expression);
+            _context.Set<T>().RemoveRange(list);
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "932cdcb4-d24e-4dd0-bead-b83675ae4891",
+		"_postman_id": "a6cca765-c65a-4592-a3fe-a79d26c4f562",
 		"name": "JwtAuth",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -9,18 +9,13 @@
 			"name": "Register user",
 			"request": {
 				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
+				"header": [],
 				"body": {
 					"mode": "formdata",
 					"formdata": [
 						{
 							"key": "email",
-							"value": "c@c.c",
+							"value": "a@a.a",
 							"type": "text"
 						},
 						{
@@ -46,20 +41,34 @@
 		},
 		{
 			"name": "Login user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2fca782b-6441-4e2b-9eb2-ca79456236e8",
+						"type": "text/javascript",
+						"exec": [
+							"if(pm.response.code == 200) {",
+							"    let res = pm.response.json().data;",
+							"    pm.globals.set(\"Access-Token\", res.accessToken);",
+							"    pm.globals.set(\"Refresh-Token\", res.refreshToken);",
+							"} else {",
+							"    pm.globals.unset(\"Access-Token\");",
+							"    pm.globals.unset(\"Refresh-Token\");",
+							"}"
+						]
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
+				"header": [],
 				"body": {
 					"mode": "formdata",
 					"formdata": [
 						{
 							"key": "email",
-							"value": "c@c.c",
+							"value": "a@a.a",
 							"type": "text"
 						},
 						{
@@ -78,6 +87,146 @@
 					"path": [
 						"auth",
 						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Unsecure endpoint",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "localhost:5000/dummy/unsecure",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"dummy",
+						"unsecure"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Secure endpoint",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{Access-Token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "localhost:5000/dummy/secure",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"dummy",
+						"secure"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get new refresh token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "f80add72-b822-40cb-a375-4415750a5733",
+						"type": "text/javascript",
+						"exec": [
+							"if(pm.response.code == 200) {",
+							"    let res = pm.response.json().data;",
+							"    pm.globals.set(\"Access-Token\", res.accessToken);",
+							"    pm.globals.set(\"Refresh-Token\", res.refreshToken);",
+							"} else {",
+							"    pm.globals.unset(\"Access-Token\");",
+							"    pm.globals.unset(\"Refresh-Token\");",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "token",
+							"value": "{{Access-Token}}",
+							"type": "text"
+						},
+						{
+							"key": "oldRefreshToken",
+							"value": "{{Refresh-Token}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "localhost:5000/auth/newRefreshToken",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"auth",
+						"newRefreshToken"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Invalidate refresh tokens",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "token",
+							"value": "{{Access-Token}}",
+							"type": "text"
+						},
+						{
+							"key": "oldRefreshToken",
+							"value": "{{Refresh-Token}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "localhost:5000/auth/invalidateOthers",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"auth",
+						"invalidateOthers"
 					]
 				}
 			},

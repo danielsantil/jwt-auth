@@ -4,6 +4,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using JwtAuthModels.Data;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
@@ -12,11 +14,13 @@ namespace JwtAuth.Services
     public class JwtAuthentication : IJwtAuthentication
     {
         private const string InvalidToken = "Invalid token";
-        private IConfiguration _conf;
+        private readonly IConfiguration _conf;
+        private readonly IHttpContextAccessor _http;
 
-        public JwtAuthentication(IConfiguration configuration)
+        public JwtAuthentication(IConfiguration configuration, IHttpContextAccessor http)
         {
             _conf = configuration;
+            _http = http;
         }
 
         public string GetToken(List<Claim> customClaims)
@@ -59,16 +63,37 @@ namespace JwtAuth.Services
             };
 
             var handler = new JwtSecurityTokenHandler();
-            SecurityToken validatedToken;
-            var principal = handler.ValidateToken(token, validationParameters, out validatedToken);
-            var jwtToken = validatedToken as JwtSecurityToken;
-            if (jwtToken == null
+            var principal = handler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+
+            if (!(validatedToken is JwtSecurityToken jwtToken)
                 || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
                 throw new SecurityTokenException(InvalidToken);
             }
 
             return principal;
+        }
+
+        public Token BuildTokenEntity(int userId, string refreshToken)
+        {
+            Token newToken = new Token
+            {
+                UserId = userId,
+                RefreshToken = refreshToken,
+                GeneratedOn = DateTime.Now,
+                Expiration = DateTime.Now.AddSeconds(_conf.GetValue<double>("JWT:RefreshExpireSeconds")),
+                Origin = _http.HttpContext.Connection.RemoteIpAddress?.MapToIPv4()?.ToString()
+            };
+
+            return newToken;
+        }
+
+        public List<Claim> GetClaims(string email)
+        {
+            List<Claim> customClaims = new List<Claim> {
+                new Claim(JwtRegisteredClaimNames.Email, email)
+            };
+            return customClaims;
         }
     }
 }

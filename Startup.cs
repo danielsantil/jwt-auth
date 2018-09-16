@@ -2,19 +2,19 @@
 using JwtAuth.DataContext;
 using JwtAuth.ExtensionMethods;
 using JwtAuth.Services;
-using JwtAuth.Services.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using JwtAuth.Repository;
 
 namespace JwtAuth
 {
     public class Startup
     {
-        private IConfiguration _configuration;
+        private readonly IConfiguration _configuration;
 
         public Startup(IConfiguration configuration)
         {
@@ -29,22 +29,23 @@ namespace JwtAuth
             services.AddMvc().AddJsonOptions(options =>
             {
                 options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             });
             services.AddAutoMapper();
             services.ConfigureAuthentication(_configuration);
-            services.AddScoped<ILoginData, SqlLoginData>();
             services.AddScoped<IJwtAuthentication, JwtAuthentication>();
             services.AddScoped<IUserAuthentication, UserAuthentication>();
+            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddDbContext<JwtAuthDbContext>(options => options.UseSqlServer(_configuration.GetConnectionString("JwtAuth")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            //if (env.IsDevelopment())
-            //{
+            if (env.IsDevelopment())
+            {
                 app.UseDeveloperExceptionPage();
-            //}
+            }
 
             // Implement exception handler
 

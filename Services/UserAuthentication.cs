@@ -1,14 +1,12 @@
-﻿using AutoMapper;
-using JwtAuth.Services.Data;
-using JwtAuthModels.Data;
-using JwtAuthModels.ViewModels;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
+using AutoMapper;
+using JwtAuth.Repository;
+using JwtAuthModels.Data;
+using JwtAuthModels.ViewModels;
 
 namespace JwtAuth.Services
 {
@@ -16,25 +14,25 @@ namespace JwtAuth.Services
     {
         private readonly IMapper _mapper;
         private readonly IJwtAuthentication _authService;
-        private readonly IHttpContextAccessor _http;
-        private readonly IConfiguration _conf;
-        private readonly ILoginData _loginData;
+        private readonly IRepository<User> _userRepository;
+        private readonly IRepository<Token> _tokenRepository;
 
         private readonly int SALT_SIZE = 64;
         private readonly int HASH_SIZE = 64;
         private readonly int HASH_ITERATIONS = 10000;
+        private readonly string REFRESH_TOKEN_EXPIRED = "Refresh token not longer valid.";
+        private readonly string INVALID_TOKEN = "Invalid token.";
 
-        public UserAuthentication(IMapper mapper, IHttpContextAccessor http,
-                                  IConfiguration conf, IJwtAuthentication authService, ILoginData loginData)
+        public UserAuthentication(IMapper mapper, IJwtAuthentication authService,
+                                  IRepository<User> userRepository, IRepository<Token> tokenRepository)
         {
             _mapper = mapper;
             _authService = authService;
-            _http = http;
-            _conf = conf;
-            _loginData = loginData;
+            _userRepository = userRepository;
+            _tokenRepository = tokenRepository;
         }
 
-        public ApiResponse Register(UserViewModel user)
+        public async Task<ApiResponse> Register(UserViewModel user)
         {
             byte[] salt = GenerateSalt(SALT_SIZE);
             byte[] passwordHash = GeneratePassword(user.Password, salt);
@@ -42,41 +40,30 @@ namespace JwtAuth.Services
             newUser.Salt = salt;
             newUser.Hash = passwordHash;
 
-            if (_loginData.UserExists(newUser))
+            if (await _userRepository.Count(x => x.Email == newUser.Email) > 0)
                 return new ApiResponse { Error = $"User {newUser.Email} already exists." };
 
-            _loginData.RegisterUser(newUser);
+            await _userRepository.Insert(newUser);
+
             return new ApiResponse { Data = $"User {newUser.Email} registered successfully." };
         }
 
-        public ApiResponse Authenticate(UserViewModel modelUser)
+        public async Task<ApiResponse> Authenticate(UserViewModel modelUser)
         {
-            User dbUser = _loginData.GetUser(modelUser.Email);
-            if (dbUser == null)
+            User storedUser = await _userRepository.Get(x => x.Email == modelUser.Email);
+            if (storedUser == null)
                 return new ApiResponse { Error = $"User {modelUser.Email} doesn't exist." };
 
-            byte[] storedSalt = dbUser.Salt;
-            byte[] incomingPass = GeneratePassword(modelUser.Password, storedSalt);
+            byte[] incomingPass = GeneratePassword(modelUser.Password, storedUser.Salt);
 
-            // Check if both passwords match
-            bool different = false;
-            for (int i = 0; i < dbUser.Hash.Length; i++)
-            {
-                if (dbUser.Hash[i] != incomingPass[i])
-                {
-                    different = true;
-                    break;
-                }
-            }
-
-            if (different)
+            if (PasswordsDontMatch(incomingPass, storedUser.Hash))
                 return new ApiResponse { Error = "Incorrect password." };
 
-            string token = _authService.GetToken(GetClaims(dbUser));
+            string token = _authService.GetToken(_authService.GetClaims(storedUser.Email));
             string refreshToken = _authService.GetRefreshToken();
-            Token generatedToken = BuildTokenEntity(dbUser.Id, refreshToken);
-            _loginData.SaveRefreshToken(generatedToken);
-            int refreshTokensCount = _loginData.GetUserRefreshTokens(dbUser.Id);
+            Token generatedToken = _authService.BuildTokenEntity(storedUser.Id, refreshToken);
+            await _tokenRepository.Insert(generatedToken);
+            int refreshTokensCount = await _tokenRepository.Count(t => t.UserId == storedUser.Id);
 
             ApiResponse response = new ApiResponse
             {
@@ -89,6 +76,74 @@ namespace JwtAuth.Services
             };
 
             return response;
+        }
+
+
+        public async Task<ApiResponse> GetNewRefreshToken(TokenViewModel model)
+        {
+            ApiResponse response = new ApiResponse();
+            try
+            {
+                User storedUser = await GetUserFromToken(model.Token);
+                Token storedToken = await _tokenRepository.Get(x => x.UserId == storedUser.Id 
+                                                               && x.RefreshToken == model.OldRefreshToken);
+                if (storedToken == null || DateTime.Now.CompareTo(storedToken.Expiration) >= 0)
+                    return new ApiResponse { Error = REFRESH_TOKEN_EXPIRED };
+
+                string newAccessToken = _authService.GetToken(_authService.GetClaims(storedUser.Email));
+                string newRefreshToken = _authService.GetRefreshToken();
+                Token newToken = _authService.BuildTokenEntity(storedUser.Id, newRefreshToken);
+                await _tokenRepository.Delete(storedToken);
+                await _tokenRepository.Insert(newToken);
+
+                response.Data = new
+                {
+                    accessToken = newAccessToken,
+                    refreshToken = newRefreshToken
+                };
+            }
+            catch (Exception e)
+            {
+                response.Error = e.Message;
+            }
+
+            return response;
+        }
+
+        public async Task<ApiResponse> InvalidateRefreshTokens(TokenViewModel model)
+        {
+            ApiResponse response = new ApiResponse();
+            try
+            {
+                User storedUser = await GetUserFromToken(model.Token);
+                if(storedUser == null)
+                    return new ApiResponse { Error = INVALID_TOKEN };
+
+                await _tokenRepository.Delete(x => x.UserId == storedUser.Id 
+                                              && x.RefreshToken != model.OldRefreshToken);
+
+                response.Data = true;
+            }
+            catch (Exception e)
+            {
+                response.Error = e.Message;
+            }
+
+            return response;
+        }
+
+        private bool PasswordsDontMatch(byte[] incomingPass, byte[] storedPass)
+        {
+            bool different = false;
+            for (int i = 0; i < storedPass.Length; i++)
+            {
+                if (storedPass[i] != incomingPass[i])
+                {
+                    different = true;
+                    break;
+                }
+            }
+            return different;
         }
 
         private byte[] GenerateSalt(int saltSize)
@@ -113,26 +168,13 @@ namespace JwtAuth.Services
             }
         }
 
-        private List<Claim> GetClaims(User user)
+        private async Task<User> GetUserFromToken(string token)
         {
-            var customClaims = new List<Claim> {
-                new Claim(JwtRegisteredClaimNames.Email, user.Email)
-            };
-            return customClaims;
-        }
+            ClaimsPrincipal principal = _authService.GetPrincipalsFromExpired(token);
+            string email = principal.Identities.FirstOrDefault().Claims.FirstOrDefault().Value;
+            User storedUser = await _userRepository.Get(x => x.Email == email);
 
-        private Token BuildTokenEntity(int userId, string refreshToken)
-        {
-            Token newToken = new Token
-            {
-                UserId = userId,
-                RefreshToken = refreshToken,
-                GeneratedOn = DateTime.Now,
-                Expiration = DateTime.Now.AddSeconds(_conf.GetValue<double>("JWT:RefreshExpireSeconds")),
-                Origin = _http.HttpContext.Connection.RemoteIpAddress?.MapToIPv4()?.ToString()
-            };
-
-            return newToken;
+            return storedUser;
         }
     }
 }
